@@ -6,7 +6,7 @@ name: hello-world_pr-default-dev_app_60f94f8 Pipeline (Skyu Generated)
       - synchronize
   workflow_dispatch: {}
   repository_dispatch:
-    types: pipeline_cffc6e82-c378-4112-8255-40504646f3b6
+    types: pipeline_1080206c-9727-4b82-94c0-87b838d8ff9f
 env:
   ENCODED_PIPELINE_SECRET: ${{secrets.HELLOWORLD_HELLOWORLD_PRDEFAULTDEV_APP_60F94F8}}
   COMMIT_ID: ${{github.event.client_payload.commitId || github.sha || github.run_id}}
