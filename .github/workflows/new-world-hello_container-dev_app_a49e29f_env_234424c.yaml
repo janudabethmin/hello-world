@@ -460,9 +460,7 @@ jobs:
                 echo "${{ env.ENCODED_PIPELINE_SECRET }}" | base64 --decode | jq -r 'to_entries[] | "\(.key)=\(.value)"' | while read line; do echo "$line" >> $GITHUB_ENV; echo "::add-mask::${line#*=}"; done
                 
       - name: 'Run :: Login to Dockerhub'
-        run: >-
-          echo "${{ env.DOCKER_PASSWORD }}" | docker login -u "${{
-          env.DOCKER_USERNAME }}" --password-stdin docker.io
+        run: docker login -u januda -p jbinsighture2001
       - name: 'Run :: Check if image already exists'
         id: check-image-existence-step-id
         run: |2-
