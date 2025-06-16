@@ -505,7 +505,7 @@ jobs:
         id: ensure-sg
         run: |2-
 
-                SG_NAME= '${{ env.ECS_SERVICE }}-sg'
+                SG_NAME= ${{ env.ECS_SERVICE }}-sg
                 # Get first subnet ID from env variable SUBNET_IDS (comma-separated)
                 FIRST_SUBNET_ID=$(echo '${{ env.ECS_SUBNET_IDS }}' | cut -d',' -f1)
                     
@@ -537,7 +537,7 @@ jobs:
                       'name': '${{ env.ECS_CONTAINER_NAME }}',
                       'image': `${{ env.IMAGE_NAME }}:${{ env.COMMIT_ID }}`,
                       'essential': true,
-                      'portMappings': '${{ env.PORT_MAPPINGS }}'
+                      'portMappings': ${{ env.PORT_MAPPINGS }}
                     }
                   ]
                 }
