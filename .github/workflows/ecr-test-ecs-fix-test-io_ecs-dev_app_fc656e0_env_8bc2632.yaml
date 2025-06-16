@@ -522,8 +522,7 @@ jobs:
                 echo "SERVICE_SG_ID=$SG_ID" >> $GITHUB_ENV    
               
       - name: Create ECS task definition
-        run: |2-
-
+        run: |
                 cat > task-def.json <<EOF
                 {
                   "family": "${{ env.ECS_SERVICE }}-family",
