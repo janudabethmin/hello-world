@@ -554,7 +554,7 @@ jobs:
             "containerDefinitions": [
               {
                 "name": "${{ env.CONTAINER_NAME }}",
-                "image": "${{ env.IMAGE_NAME }}:${{ env.COMMIT_ID }}",
+                "image": "nginx:latest",
                 "essential": true,
                 "portMappings": ${{ env.PORT_MAPPINGS }}
               }
