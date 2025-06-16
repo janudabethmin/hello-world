@@ -526,18 +526,18 @@ jobs:
 
                 cat > task-def.json <<EOF
                 {
-                  'family': '${{ env.ECS_SERVICE }}-family',
-                  'networkMode': 'awsvpc',
-                  'requiresCompatibilities': ['FARGATE'],
-                  'cpu': '${{ env.ECS_CPU }}',
-                  'memory': '${{ env.ECS_MEMORY}}',
-                  'executionRoleArn': '${{ env.roleARN }}',
-                  'containerDefinitions': [
+                  "family": "${{ env.ECS_SERVICE }}-family",
+                  "networkMode": "awsvpc",
+                  "requiresCompatibilities": ["FARGATE"],
+                  "cpu": "${{ env.ECS_CPU }}",
+                  "memory": "${{ env.ECS_MEMORY}}",
+                  "executionRoleArn": "${{ env.roleARN }}",
+                  "containerDefinitions": [
                     {
-                      'name': '${{ env.ECS_CONTAINER_NAME }}',
-                      'image': '${{ env.IMAGE_NAME }}:${{ env.COMMIT_ID }}',
-                      'essential': true,
-                      'portMappings': ${{ env.PORT_MAPPINGS }}
+                      "name": "${{ env.ECS_CONTAINER_NAME }}",
+                      "image": "${{ env.IMAGE_NAME }}:${{ env.COMMIT_ID }}",
+                      "essential": true,
+                      "portMappings": ${{ env.PORT_MAPPINGS }}
                     }
                   ]
                 }
