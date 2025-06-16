@@ -535,7 +535,7 @@ jobs:
                   'containerDefinitions': [
                     {
                       'name': '${{ env.ECS_CONTAINER_NAME }}',
-                      'image': `${{ env.IMAGE_NAME }}:${{ env.COMMIT_ID }}`,
+                      'image': '${{ env.IMAGE_NAME }}:${{ env.COMMIT_ID }}',
                       'essential': true,
                       'portMappings': ${{ env.PORT_MAPPINGS }}
                     }
