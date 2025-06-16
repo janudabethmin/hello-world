@@ -519,11 +519,26 @@ jobs:
         id: ensure-sg
         run: |
           SG_NAME="${{ env.SERVICE_NAME }}-sg"
-          VPC_ID=$(aws ec2 describe-vpcs --query 'Vpcs[0].VpcId' --output text)
-          SG_ID=$(aws ec2 describe-security-groups --filters Name=group-name,Values=$SG_NAME Name=vpc-id,Values=$VPC_ID --query 'SecurityGroups[0].GroupId' --output text)
-          if [ "$SG_ID" = "None" ]; then
-            SG_ID=$(aws ec2 create-security-group --group-name "$SG_NAME" --description "SG for ECS service" --vpc-id "$VPC_ID" --query 'GroupId' --output text)
+          # Get first subnet ID from env variable SUBNET_IDS (comma-separated)
+          FIRST_SUBNET_ID=$(echo "${{ env.SUBNET_IDS }}" | cut -d',' -f1)
+          
+          # Get VPC ID for that subnet
+          VPC_ID=$(aws ec2 describe-subnets --subnet-ids "$FIRST_SUBNET_ID" --query 'Subnets[0].VpcId' --output text)
+
+          # Check if security group exists in this VPC
+          SG_ID=$(aws ec2 describe-security-groups \
+            --filters Name=group-name,Values=$SG_NAME Name=vpc-id,Values=$VPC_ID \
+            --query 'SecurityGroups[0].GroupId' --output text)
+
+          if [ "$SG_ID" = "None" ] || [ -z "$SG_ID" ]; then
+            # Create security group in the correct VPC
+            SG_ID=$(aws ec2 create-security-group \
+              --group-name "$SG_NAME" \
+              --description "SG for ECS service" \
+              --vpc-id "$VPC_ID" \
+              --query 'GroupId' --output text)
           fi
+
           echo "SERVICE_SG_ID=$SG_ID" >> $GITHUB_ENV
 
       - name: Generate ECS task definition
