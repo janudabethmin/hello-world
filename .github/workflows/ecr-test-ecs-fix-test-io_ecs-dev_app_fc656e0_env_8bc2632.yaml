@@ -522,25 +522,25 @@ jobs:
                 echo "SERVICE_SG_ID=$SG_ID" >> $GITHUB_ENV    
               
       - name: Create ECS task definition
-        run: |
-                cat > task-def.json <<EOF
-                {
-                  "family": "${{ env.ECS_SERVICE }}-family",
-                  "networkMode": "awsvpc",
-                  "requiresCompatibilities": ["FARGATE"],
-                  "cpu": "${{ env.ECS_CPU }}",
-                  "memory": "${{ env.ECS_MEMORY}}",
-                  "executionRoleArn": "${{ env.roleARN }}",
-                  "containerDefinitions": [
-                    {
-                      "name": "${{ env.ECS_CONTAINER_NAME }}",
-                      "image": "${{ env.IMAGE_NAME }}:${{ env.COMMIT_ID }}",
-                      "essential": true,
-                      "portMappings": ${{ env.PORT_MAPPINGS }}
-                    }
-                  ]
-                }
-                EOF
+        run: |2-
+          cat > task-def.json <<EOF
+          {
+            "family": "${{ env.ECS_SERVICE }}-family",
+            "networkMode": "awsvpc",
+            "requiresCompatibilities": ["FARGATE"],
+            "cpu": "${{ env.ECS_CPU }}",
+            "memory": "${{ env.ECS_MEMORY }}",
+            "executionRoleArn": "${{ env.roleARN }}",
+            "containerDefinitions": [
+              {
+                "name": "${{ env.ECS_CONTAINER_NAME }}",
+                "image": "${{ env.IMAGE_NAME }}:${{ env.COMMIT_ID }}",
+                "essential": true,
+                "portMappings": ${{ env.PORT_MAPPINGS }}
+              }
+            ]
+          }
+          EOF
               
       - name: 'Run :: Register ECS task definition'
         id: register-task-def
