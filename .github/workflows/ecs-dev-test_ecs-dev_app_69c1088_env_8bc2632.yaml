@@ -419,7 +419,7 @@ jobs:
       MEMORY: "512"
       CONTAINER_PORT: 80
       HOST_PORT: 80
-      PORT_MAPPINGS: "[{'containerPort':80,'hostPort':80,'protocol':'tcp'}]"
+      PORT_MAPPINGS: '[{"containerPort":80,"hostPort":80,"protocol":"tcp"}]'
       DESIRED_COUNT: 1
       ECS_CLUSTER: "ecs-test"
 
@@ -541,7 +541,7 @@ jobs:
                 "name": "${{ env.CONTAINER_NAME }}",
                 "image": "${{ env.IMAGE_NAME }}:${{ env.COMMIT_ID }}",
                 "essential": true,
-                "portMappings": ${{ env.PORT_MAPPINGS }},
+                "portMappings": ${{ env.PORT_MAPPINGS }}
               }
             ]
           }
