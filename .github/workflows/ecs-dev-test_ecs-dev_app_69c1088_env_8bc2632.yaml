@@ -542,13 +542,7 @@ jobs:
                 "name": "${{ env.CONTAINER_NAME }}",
                 "image": "${{ env.IMAGE_NAME }}:${{ env.COMMIT_ID }}",
                 "essential": true,
-                "portMappings": [
-                  {
-                    "containerPort": ${{ env.CONTAINER_PORT }},
-                    "hostPort": ${{ env.HOST_PORT }},
-                    "protocol": "tcp"
-                  }
-                ]
+                "portMappings": ${{ env.PORT_MAPPINGS }},
               }
             ]
           }
