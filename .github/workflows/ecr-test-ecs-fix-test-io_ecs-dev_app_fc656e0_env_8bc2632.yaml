@@ -522,26 +522,41 @@ jobs:
                 echo "SERVICE_SG_ID=$SG_ID" >> $GITHUB_ENV    
               
       - name: Create ECS task definition
-        run: |2-
-          cat > task-def.json <<EOF
-          {
-            "family": "${{ env.ECS_SERVICE }}-family",
-            "networkMode": "awsvpc",
-            "requiresCompatibilities": ["FARGATE"],
-            "cpu": "${{ env.ECS_CPU }}",
-            "memory": "${{ env.ECS_MEMORY }}",
-            "executionRoleArn": "${{ env.roleARN }}",
-            "containerDefinitions": [
-              {
-                "name": "${{ env.ECS_CONTAINER_NAME }}",
-                "image": "${{ env.IMAGE_NAME }}:${{ env.COMMIT_ID }}",
-                "essential": true,
-                "portMappings": ${{ env.PORT_MAPPINGS }}
-              }
-            ]
-          }
-          EOF
-              
+        uses: actions/github-script@v7
+        with:
+          script: |2-
+
+                    const fs = require('fs');
+                    
+                    const ecsService = process.env.ECS_SERVICE;
+                    const ecsCpu = process.env.ECS_CPU;
+                    const ecsMemory = process.env.ECS_MEMORY;
+                    const roleArn = process.env.roleARN;
+                    const ecsContainerName = process.env.ECS_CONTAINER_NAME;
+                    const imageName = process.env.IMAGE_NAME;
+                    const commitId = process.env.COMMIT_ID;      
+                    const portMappings = JSON.parse(process.env.PORT_MAPPINGS);
+
+                    const taskDef = {
+                      family: `${ecsService}-family`,
+                      networkMode: "awsvpc",
+                      requiresCompatibilities: ["FARGATE"],
+                      cpu: ecsCpu,
+                      memory: ecsMemory,
+                      executionRoleArn: roleArn,
+                      containerDefinitions: [
+                        {
+                          name: ecsContainerName,
+                          image: `${imageName}:${commitId}`,
+                          essential: true,
+                          portMappings: portMappings
+                        }
+                      ]
+                    };
+
+                    fs.writeFileSync('task-def.json', JSON.stringify(taskDef, null, 2));
+                    console.log('Successfully generated task-def.json', taskDef);
+                
       - name: 'Run :: Register ECS task definition'
         id: register-task-def
         run: |2-
@@ -757,6 +772,7 @@ jobs:
             
     needs:
       - build-and-push
+      - _status_testing
     permissions: write-all
     if: github.event.client_payload.releaseData == null
     runs-on: ubuntu-latest
