@@ -529,7 +529,7 @@ jobs:
                     const ecsService = process.env.ECS_SERVICE;
                     const ecsCpu = process.env.ECS_CPU;
                     const ecsMemory = process.env.ECS_MEMORY;
-                    const roleArn = process.env.roleARN;
+                    const roleArn = process.env.cloudCredRoleArn;
                     const ecsContainerName = process.env.ECS_CONTAINER_NAME;
                     const imageName = process.env.IMAGE_NAME;
                     const commitId = process.env.COMMIT_ID;      
