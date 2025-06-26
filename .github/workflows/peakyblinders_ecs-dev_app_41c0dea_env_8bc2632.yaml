@@ -532,9 +532,9 @@ jobs:
                     const roleArn = process.env.cloudCredRoleArn;
                     const ecsContainerName = process.env.ECS_CONTAINER_NAME;
                     const imageName = process.env.IMAGE_NAME;
-                    const commitId = process.env.COMMIT_ID;    
+                    const commitId = process.env.COMMIT_ID;
                     const portMappings = JSON.parse(process.env.PORT_MAPPINGS);
-
+                    const awsRegion = process.env.cloudCredRegion;
                     const taskDef = {
                       family: `${ecsService}-family`,
                       networkMode: "awsvpc",
@@ -547,7 +547,15 @@ jobs:
                           name: ecsContainerName,
                           image: `${imageName}:${commitId}`,
                           essential: true,
-                          portMappings: portMappings
+                          portMappings: portMappings,
+                          logConfiguration: {
+                            logDriver: "awslogs",
+                            options: {
+                              "awslogs-group": `/ecs/${ecsService}`,
+                              "awslogs-region": awsRegion,
+                              "awslogs-stream-prefix": ecsService
+                            }
+                          }
                         }
                       ]
                     };
