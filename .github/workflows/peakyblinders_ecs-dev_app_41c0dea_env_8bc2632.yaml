@@ -517,7 +517,13 @@ jobs:
                   # Create security group in the correct VPC
                   SG_ID=$(aws ec2 create-security-group           --group-name "$SG_NAME"           --description "SG for ECS service"           --vpc-id "$VPC_ID"           --query 'GroupId' --output text)
                 fi
-                echo "SERVICE_SG_ID=$SG_ID" >> $GITHUB_ENV    
+                echo "SERVICE_SG_ID=$SG_ID" >> $GITHUB_ENV 
+
+      - name: Ensure CloudWatch log group exists
+        run: |
+          aws logs describe-log-groups --log-group-name-prefix "/ecs/${{ env.ECS_SERVICE }}" \
+          | grep "/ecs/${{ env.ECS_SERVICE }}" > /dev/null || \
+          aws logs create-log-group --log-group-name "/ecs/${{ env.ECS_SERVICE }}"   
               
       - name: Create ECS task definition
         uses: actions/github-script@v7
