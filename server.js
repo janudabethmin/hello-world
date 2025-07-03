@@ -10,4 +10,5 @@ app.listen(port, () => {
   console.log(`Example app listening on port ${port}`)
   console.log(`################################ ${process.env.REGION}`)
   console.log(`################################ ${process.env.NAME}`)
+  console.log(`################################ ${process.env.LOG}`)
 })
