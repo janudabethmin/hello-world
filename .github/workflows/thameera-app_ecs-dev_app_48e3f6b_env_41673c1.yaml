@@ -577,7 +577,61 @@ jobs:
 
                 TASK_DEF_ARN=$(aws ecs register-task-definition         --cli-input-json file://task-def.json         --query 'taskDefinition.taskDefinitionArn'         --output text)
                 echo "TASK_DEF_ARN=$TASK_DEF_ARN" >> $GITHUB_ENV
+
+      - name: 'Get VPC ID and create Service Connect namespace if missing'
+        id: setup_namespace
+        run: |
+                  NAMESPACE_NAME="test"
+                  REGION="${{ env.cloudCredRegion }}"
               
+                  # Get first subnet ID from ECS_SUBNET_IDS env variable
+                  FIRST_SUBNET_ID=$(echo "${{ env.ECS_SUBNET_IDS }}" | cut -d',' -f1)
+                  echo "First subnet ID: $FIRST_SUBNET_ID"
+              
+                  # Get VPC ID from that subnet
+                  VPC_ID=$(aws ec2 describe-subnets --subnet-ids "$FIRST_SUBNET_ID" --query 'Subnets[0].VpcId' --output text)
+                  echo "VPC ID: $VPC_ID"
+              
+                  # Export VPC_ID for later steps
+                  echo "VPC_ID=$VPC_ID" >> $GITHUB_ENV
+              
+                  # Check if namespace exists
+                  NAMESPACE_ID=$(aws servicediscovery list-namespaces \
+                    --region "$REGION" \
+                    --query "Namespaces[?Name=='$NAMESPACE_NAME'].Id" \
+                    --output text)
+              
+                  if [ -z "$NAMESPACE_ID" ]; then
+                    echo "Namespace '$NAMESPACE_NAME' not found. Creating..."
+                    OPERATION_ID=$(aws servicediscovery create-private-dns-namespace \
+                      --name "$NAMESPACE_NAME" \
+                      --vpc "$VPC_ID" \
+                      --region "$REGION" \
+                      --query "OperationId" \
+                      --output text)
+              
+                    echo "Waiting for namespace creation to complete..."
+                    while true; do
+                      STATUS=$(aws servicediscovery get-operation \
+                        --operation-id "$OPERATION_ID" \
+                        --region "$REGION" \
+                        --query "Operation.Status" \
+                        --output text)
+                      echo "Namespace creation status: $STATUS"
+                      if [ "$STATUS" = "SUCCESS" ]; then
+                        echo "Namespace created successfully."
+                        break
+                      elif [ "$STATUS" = "FAIL" ]; then
+                        echo "Namespace creation failed."
+                        exit 1
+                      else
+                        sleep 5
+                      fi
+                    done
+                  else
+                    echo "Namespace '$NAMESPACE_NAME' already exists with ID: $NAMESPACE_ID"
+                  fi
+        shell: /usr/bin/bash          
       - name: 'Run :: Create or update ECS service'
         run: |
                 SERVICE_EXISTS=$(aws ecs describe-services \
