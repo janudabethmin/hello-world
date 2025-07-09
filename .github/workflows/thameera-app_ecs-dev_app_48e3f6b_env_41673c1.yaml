@@ -409,7 +409,7 @@ jobs:
   build-and-push:
     name: build-and-push
     env:
-      NAMESPACE: "test"
+      NAMESPACE: "test-two"
     steps:
       - name: 'Run :: Start'
         run: |2-
