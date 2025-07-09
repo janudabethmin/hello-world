@@ -582,6 +582,7 @@ jobs:
         run: |2-
 
                 SERVICE_EXISTS=$(aws ecs describe-services         --cluster ${{ env.ECS_CLUSTER }}         --services ${{ env.ECS_SERVICE }}         --query 'services[0].status' --output text)
+                SERVICE_CONNECT_CONFIG="serviceConnectConfiguration={enabled=true,namespace='test'}"
                 if [ "$SERVICE_EXISTS" = "ACTIVE" ]; then
                   aws ecs update-service           --cluster ${{ env.ECS_CLUSTER }}           --service ${{ env.ECS_SERVICE }}           --task-definition $TASK_DEF_ARN
                 else
