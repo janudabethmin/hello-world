@@ -10,7 +10,7 @@ name: thameera-app_ecs-dev_app_48e3f6b_env_41673c1 Pipeline (Skyu Generated)
       - README.md
   workflow_dispatch: {}
   repository_dispatch:
-    types: pipeline_f29a0c1d-a0c6-4e33-a237-3e48c74206fa
+    types: pipeline_566e0b6e-80f4-47ba-9fe0-396265a951e1
 env:
   ENCODED_PIPELINE_SECRET: ${{secrets.HELLOWORLD_THAMEERAAPP_ECSDEV_APP_48E3F6B_ENV_41673C1}}
   COMMIT_ID: ${{github.event.client_payload.commitId || github.sha || github.run_id}}
