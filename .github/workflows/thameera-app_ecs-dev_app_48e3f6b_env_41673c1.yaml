@@ -408,6 +408,8 @@ jobs:
     runs-on: ubuntu-latest
   build-and-push:
     name: build-and-push
+    env:
+      NAMESPACE: "test"
     steps:
       - name: 'Run :: Start'
         run: |2-
@@ -581,7 +583,7 @@ jobs:
       - name: 'Get VPC ID and create Service Connect namespace if missing'
         id: setup_namespace
         run: |
-                  NAMESPACE_NAME="test"
+                  NAMESPACE_NAME=${{ env.NAMESPACE }}
                   REGION="${{ env.cloudCredRegion }}"
               
                   # Get first subnet ID from ECS_SUBNET_IDS env variable
@@ -638,7 +640,7 @@ jobs:
                   --services ${{ env.ECS_SERVICE }} \
                   --query 'services[0].status' --output text)
                       
-                SERVICE_CONNECT_CONFIG="enabled=true,namespace=test"
+                SERVICE_CONNECT_CONFIG="enabled=true,namespace=${{ env.NAMESPACE }}"
                       
                 if [ "$SERVICE_EXISTS" = "ACTIVE" ]; then
                   echo "Service exists. Updating..."
