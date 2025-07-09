@@ -585,7 +585,7 @@ jobs:
                   --services ${{ env.ECS_SERVICE }} \
                   --query 'services[0].status' --output text)
                       
-                SERVICE_CONNECT_CONFIG="enabled=true,namespace=test,services=[{portName=web}]"
+                SERVICE_CONNECT_CONFIG="enabled=true,namespace=test"
                       
                 if [ "$SERVICE_EXISTS" = "ACTIVE" ]; then
                   echo "Service exists. Updating..."
