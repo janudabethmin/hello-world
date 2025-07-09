@@ -578,16 +578,34 @@ jobs:
                 TASK_DEF_ARN=$(aws ecs register-task-definition         --cli-input-json file://task-def.json         --query 'taskDefinition.taskDefinitionArn'         --output text)
                 echo "TASK_DEF_ARN=$TASK_DEF_ARN" >> $GITHUB_ENV
               
-      - name: 'Run :: Create or update ECS service'
-        run: |2-
-
-                SERVICE_EXISTS=$(aws ecs describe-services         --cluster ${{ env.ECS_CLUSTER }}         --services ${{ env.ECS_SERVICE }}         --query 'services[0].status' --output text)
-                SERVICE_CONNECT_CONFIG="serviceConnectConfiguration={enabled=true,namespace='test'}"
-                if [ "$SERVICE_EXISTS" = "ACTIVE" ]; then
-                  aws ecs update-service           --cluster ${{ env.ECS_CLUSTER }}           --service ${{ env.ECS_SERVICE }}           --task-definition $TASK_DEF_ARN
-                else
-                  aws ecs create-service           --cluster ${{ env.ECS_CLUSTER }}           --service-name ${{ env.ECS_SERVICE }}           --task-definition $TASK_DEF_ARN           --desired-count ${{ env.ECS_DESIRED_COUNT }}           --launch-type FARGATE           --network-configuration 'awsvpcConfiguration={subnets=[${{ env.ECS_SUBNET_IDS }}],securityGroups=[${{ env.SERVICE_SG_ID }}],assignPublicIp=${{ env.ECS_PUBLIC_IP }}}'
-                fi   
+                - name: 'Run :: Create or update ECS service'
+                run: |
+                  SERVICE_EXISTS=$(aws ecs describe-services \
+                    --cluster ${{ env.ECS_CLUSTER }} \
+                    --services ${{ env.ECS_SERVICE }} \
+                    --query 'services[0].status' --output text)
+              
+                  SERVICE_CONNECT_CONFIG="enabled=true,namespace=test,services=[{portName=web}]"
+              
+                  if [ "$SERVICE_EXISTS" = "ACTIVE" ]; then
+                    echo "Service exists. Updating..."
+                    aws ecs update-service \
+                      --cluster ${{ env.ECS_CLUSTER }} \
+                      --service ${{ env.ECS_SERVICE }} \
+                      --task-definition $TASK_DEF_ARN \
+                      --service-connect-configuration "$SERVICE_CONNECT_CONFIG"
+                  else
+                    echo "Service does not exist. Creating..."
+                    aws ecs create-service \
+                      --cluster ${{ env.ECS_CLUSTER }} \
+                      --service-name ${{ env.ECS_SERVICE }} \
+                      --task-definition $TASK_DEF_ARN \
+                      --desired-count ${{ env.ECS_DESIRED_COUNT }} \
+                      --launch-type FARGATE \
+                      --service-connect-configuration "$SERVICE_CONNECT_CONFIG" \
+                      --network-configuration 'awsvpcConfiguration={subnets=[${{ env.ECS_SUBNET_IDS }}],securityGroups=[${{ env.SERVICE_SG_ID }}],assignPublicIp=${{ env.ECS_PUBLIC_IP }}}'
+                  fi
+              
               
     needs:
       - _status_testing
