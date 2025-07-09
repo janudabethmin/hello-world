@@ -580,6 +580,7 @@ jobs:
 
       - name: 'Get VPC ID and create Service Connect namespace if missing'
         id: setup_namespace
+        shell: /usr/bin/bash     
         run: |
                   NAMESPACE_NAME="test"
                   REGION="${{ env.cloudCredRegion }}"
@@ -630,8 +631,7 @@ jobs:
                     done
                   else
                     echo "Namespace '$NAMESPACE_NAME' already exists with ID: $NAMESPACE_ID"
-                  fi
-        shell: /usr/bin/bash          
+                  fi             
       - name: 'Run :: Create or update ECS service'
         run: |
                 SERVICE_EXISTS=$(aws ecs describe-services \
