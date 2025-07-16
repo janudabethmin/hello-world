@@ -555,15 +555,6 @@ jobs:
                           image: `${imageName}:${commitId}`,
                           essential: true,
                           portMappings: portMappings,
-                          serviceConnect: {
-                            enabled: true,
-                            namespace: process.env.ECS_NAMESPACE, 
-                            services: [
-                              {
-                                portName: "service-port"  
-                              }
-                            ]
-                          },
                           logConfiguration: {
                             logDriver: "awslogs",
                             options: {
