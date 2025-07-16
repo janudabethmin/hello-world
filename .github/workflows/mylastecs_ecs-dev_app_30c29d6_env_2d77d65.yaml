@@ -629,7 +629,12 @@ jobs:
                   "namespace": "'"${{ env.ECS_NAMESPACE }}"'",
                   "services": [
                     {
-                      "portName": "service-port"
+                      "portName": "service-port",
+                      "clientAliases": [
+                        {
+                          "dnsName": "'"${{ env.ECS_SERVICE }}"'"
+                        }
+                      ]
                     }
                   ]
                 }'
