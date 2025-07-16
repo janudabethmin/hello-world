@@ -574,11 +574,11 @@ jobs:
       - name: 'Run :: Connect namespace if missing'
         run: |2-
 
-                NAMESPACE_NAME=`${{ env.ECS_NAMESPACE }}`
-                REGION=`${{ env.cloudCredRegion }}`
+                NAMESPACE_NAME=${{ env.ECS_NAMESPACE }}
+                REGION=${{ env.cloudCredRegion }}
 
                 # Get first subnet ID from ECS_SUBNET_IDS env variable
-                FIRST_SUBNET_ID=$(echo `${{ env.ECS_SUBNET_IDS }}` | cut -d',' -f1)
+                FIRST_SUBNET_ID=$(echo ${{ env.ECS_SUBNET_IDS }} | cut -d',' -f1)
                 echo "First subnet ID: $FIRST_SUBNET_ID"
 
                 # Get VPC ID from that subnet
