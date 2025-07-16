@@ -515,9 +515,26 @@ jobs:
 
                 if [ "$SG_ID" = "None" ] || [ -z "$SG_ID" ]; then
                   # Create security group in the correct VPC
-                  SG_ID=$(aws ec2 create-security-group           --group-name "$SG_NAME"           --description "SG for ECS service"           --vpc-id "$VPC_ID"           --query 'GroupId' --output text)
+                  SG_ID=$(aws ec2 create-security-group \
+                    --group-name "$SG_NAME" \
+                    --description "SG for ECS service" \
+                    --vpc-id "$VPC_ID" \
+                    --query 'GroupId' --output text)
+                
+                  # Get the CIDR block of the VPC
+                  VPC_CIDR=$(aws ec2 describe-vpcs \
+                    --vpc-ids "$VPC_ID" \
+                    --query "Vpcs[0].CidrBlock" \
+                    --output text)
+                
+                  # Add an inbound rule to allow all traffic from within the VPC
+                  aws ec2 authorize-security-group-ingress \
+                    --group-id "$SG_ID" \
+                    --protocol -1 \
+                    --cidr "$VPC_CIDR"
                 fi
-                echo "SERVICE_SG_ID=$SG_ID" >> $GITHUB_ENV    
+                
+                echo "SERVICE_SG_ID=$SG_ID" >> $GITHUB_ENV   
               
       - name: 'Run :: Check Log Group Exists'
         run: |2-
