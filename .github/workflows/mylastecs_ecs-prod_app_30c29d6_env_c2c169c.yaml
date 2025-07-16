@@ -515,10 +515,27 @@ jobs:
 
                 if [ "$SG_ID" = "None" ] || [ -z "$SG_ID" ]; then
                   # Create security group in the correct VPC
-                  SG_ID=$(aws ec2 create-security-group           --group-name "$SG_NAME"           --description "SG for ECS service"           --vpc-id "$VPC_ID"           --query 'GroupId' --output text)
+                  SG_ID=$(aws ec2 create-security-group \
+                    --group-name "$SG_NAME" \
+                    --description "SG for ECS service" \
+                    --vpc-id "$VPC_ID" \
+                    --query 'GroupId' --output text)
+                
+                  # Get the CIDR block of the VPC
+                  VPC_CIDR=$(aws ec2 describe-vpcs \
+                    --vpc-ids "$VPC_ID" \
+                    --query "Vpcs[0].CidrBlock" \
+                    --output text)
+                
+                  # Add an inbound rule to allow all traffic from within the VPC
+                  aws ec2 authorize-security-group-ingress \
+                    --group-id "$SG_ID" \
+                    --protocol -1 \
+                    --cidr "$VPC_CIDR"
                 fi
-                echo "SERVICE_SG_ID=$SG_ID" >> $GITHUB_ENV    
-              
+                
+                echo "SERVICE_SG_ID=$SG_ID" >> $GITHUB_ENV
+             
       - name: 'Run :: Check Log Group Exists'
         run: |2-
 
@@ -574,11 +591,11 @@ jobs:
       - name: 'Run :: Connect namespace if missing'
         run: |2-
 
-                NAMESPACE_NAME=`${{ env.ECS_NAMESPACE }}`
-                REGION=`${{ env.cloudCredRegion }}`
+                NAMESPACE_NAME=${{ env.ECS_NAMESPACE }}
+                REGION=${{ env.cloudCredRegion }}
 
                 # Get first subnet ID from ECS_SUBNET_IDS env variable
-                FIRST_SUBNET_ID=$(echo `${{ env.ECS_SUBNET_IDS }}` | cut -d',' -f1)
+                FIRST_SUBNET_ID=$(echo ${{ env.ECS_SUBNET_IDS }} | cut -d',' -f1)
                 echo "First subnet ID: $FIRST_SUBNET_ID"
 
                 # Get VPC ID from that subnet
