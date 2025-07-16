@@ -612,6 +612,48 @@ jobs:
                 else
                   echo "Namespace '$NAMESPACE_NAME' already exists with ID: $NAMESPACE_ID"
                 fi
+
+      - name: 'Run :: Create Cloud Map service if missing'
+        run: |-
+          REGION=${{ env.cloudCredRegion }}
+          NAMESPACE_NAME=${{ env.ECS_NAMESPACE }}
+          SERVICE_DISCOVERY_NAME=${{ env.ECS_SERVICE }}
+
+          # Get namespace ID
+          NAMESPACE_ID=$(aws servicediscovery list-namespaces \
+            --region "$REGION" \
+            --query "Namespaces[?Name=='$NAMESPACE_NAME'].Id" \
+            --output text)
+
+          # Check for existing service
+          SD_SERVICE_ID=$(aws servicediscovery list-services \
+            --region "$REGION" \
+            --filters Name=NAMESPACE_ID,Values=$NAMESPACE_ID,Condition=EQ \
+            --query "Services[?Name=='$SERVICE_DISCOVERY_NAME'].Id" \
+            --output text)
+
+          if [ -z "$SD_SERVICE_ID" ]; then
+            echo "Creating Cloud Map service '$SERVICE_DISCOVERY_NAME'..."
+            SD_SERVICE_ID=$(aws servicediscovery create-service \
+              --name "$SERVICE_DISCOVERY_NAME" \
+              --dns-config "NamespaceId=$NAMESPACE_ID,DnsRecords=[{Type=A,TTL=60}]" \
+              --health-check-custom-config FailureThreshold=1 \
+              --region "$REGION" \
+              --query "Service.Id" \
+              --output text)
+          else
+            echo "Cloud Map service already exists: $SD_SERVICE_ID"
+          fi
+
+          # Fetch ARN
+          SD_SERVICE_ARN=$(aws servicediscovery get-service \
+            --id "$SD_SERVICE_ID" \
+            --region "$REGION" \
+            --query "Service.Arn" \
+            --output text)
+
+          echo "SD_SERVICE_ARN=$SD_SERVICE_ARN" >> $GITHUB_ENV
+
               
       - name: 'Run :: Register ECS task definition'
         id: register-task-def
@@ -641,9 +683,9 @@ jobs:
                 }'
                
                 if [ "$SERVICE_EXISTS" = "ACTIVE" ]; then
-                  aws ecs update-service           --cluster ${{ env.ECS_CLUSTER }}           --service ${{ env.ECS_SERVICE }}           --task-definition $TASK_DEF_ARN           --service-connect-configuration "$SERVICE_CONNECT_CONFIG"
+                  aws ecs update-service           --cluster ${{ env.ECS_CLUSTER }}           --service ${{ env.ECS_SERVICE }}           --task-definition $TASK_DEF_ARN           --service-connect-configuration "$SERVICE_CONNECT_CONFIG"           --service-registries "registryArn=$SD_SERVICE_ARN,containerName=${{ env.ECS_CONTAINER_NAME }},containerPort=3000"
                 else
-                  aws ecs create-service           --cluster ${{ env.ECS_CLUSTER }}           --service-name ${{ env.ECS_SERVICE }}           --task-definition $TASK_DEF_ARN           --desired-count ${{ env.ECS_DESIRED_COUNT }}           --launch-type FARGATE           --service-connect-configuration "$SERVICE_CONNECT_CONFIG"           --network-configuration 'awsvpcConfiguration={subnets=[${{ env.ECS_SUBNET_IDS }}],securityGroups=[${{ env.SERVICE_SG_ID }}],assignPublicIp=${{ env.ECS_PUBLIC_IP }}}'
+                  aws ecs create-service           --cluster ${{ env.ECS_CLUSTER }}           --service-name ${{ env.ECS_SERVICE }}           --task-definition $TASK_DEF_ARN           --desired-count ${{ env.ECS_DESIRED_COUNT }}           --launch-type FARGATE           --service-connect-configuration "$SERVICE_CONNECT_CONFIG"           --network-configuration 'awsvpcConfiguration={subnets=[${{ env.ECS_SUBNET_IDS }}],securityGroups=[${{ env.SERVICE_SG_ID }}],assignPublicIp=${{ env.ECS_PUBLIC_IP }}}'           --service-registries "registryArn=$SD_SERVICE_ARN,containerName=${{ env.ECS_CONTAINER_NAME }},containerPort=3000"           
                 fi   
               
     needs:
