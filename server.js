@@ -6,7 +6,7 @@ app.get('/', (req, res) => {
   res.send('Hi World!')
 })
 
-app.listen(port, () => {
+app.listen(port, '0.0.0.0', () => {
   console.log(`Example app listening on port ${port}`)
   console.log(`################################ ${process.env.REGION}`)
   console.log(`################################ ${process.env.NAME}`)
