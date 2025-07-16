@@ -665,9 +665,9 @@ jobs:
                 SERVICE_EXISTS=$(aws ecs describe-services         --cluster ${{ env.ECS_CLUSTER }}         --services ${{ env.ECS_SERVICE }}         --query 'services[0].status' --output text)
                
                 if [ "$SERVICE_EXISTS" = "ACTIVE" ]; then
-                  aws ecs update-service           --cluster ${{ env.ECS_CLUSTER }}           --service ${{ env.ECS_SERVICE }}           --task-definition $TASK_DEF_ARN           --service-registries "registryArn=$SD_SERVICE_ARN,containerName=${{ env.ECS_CONTAINER_NAME }},containerPort=3000"
+                  aws ecs update-service           --cluster ${{ env.ECS_CLUSTER }}           --service ${{ env.ECS_SERVICE }}           --task-definition $TASK_DEF_ARN           --service-registries "registryArn=$SD_SERVICE_ARN,containerName=${{ env.ECS_CONTAINER_NAME }}"
                 else
-                  aws ecs create-service           --cluster ${{ env.ECS_CLUSTER }}           --service-name ${{ env.ECS_SERVICE }}           --task-definition $TASK_DEF_ARN           --desired-count ${{ env.ECS_DESIRED_COUNT }}           --launch-type FARGATE           --network-configuration 'awsvpcConfiguration={subnets=[${{ env.ECS_SUBNET_IDS }}],securityGroups=[${{ env.SERVICE_SG_ID }}],assignPublicIp=${{ env.ECS_PUBLIC_IP }}}'           --service-registries "registryArn=$SD_SERVICE_ARN,containerName=${{ env.ECS_CONTAINER_NAME }},containerPort=3000"           
+                  aws ecs create-service           --cluster ${{ env.ECS_CLUSTER }}           --service-name ${{ env.ECS_SERVICE }}           --task-definition $TASK_DEF_ARN           --desired-count ${{ env.ECS_DESIRED_COUNT }}           --launch-type FARGATE           --network-configuration 'awsvpcConfiguration={subnets=[${{ env.ECS_SUBNET_IDS }}],securityGroups=[${{ env.SERVICE_SG_ID }}],assignPublicIp=${{ env.ECS_PUBLIC_IP }}}'           --service-registries "registryArn=$SD_SERVICE_ARN,containerName=${{ env.ECS_CONTAINER_NAME }}"           
                 fi   
               
     needs:
