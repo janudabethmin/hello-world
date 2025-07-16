@@ -515,26 +515,9 @@ jobs:
 
                 if [ "$SG_ID" = "None" ] || [ -z "$SG_ID" ]; then
                   # Create security group in the correct VPC
-                  SG_ID=$(aws ec2 create-security-group \
-                    --group-name "$SG_NAME" \
-                    --description "SG for ECS service" \
-                    --vpc-id "$VPC_ID" \
-                    --query 'GroupId' --output text)
-                
-                  # Get the CIDR block of the VPC
-                  VPC_CIDR=$(aws ec2 describe-vpcs \
-                    --vpc-ids "$VPC_ID" \
-                    --query "Vpcs[0].CidrBlock" \
-                    --output text)
-                
-                  # Add an inbound rule to allow all traffic from within the VPC
-                  aws ec2 authorize-security-group-ingress \
-                    --group-id "$SG_ID" \
-                    --protocol -1 \
-                    --cidr "$VPC_CIDR"
+                  SG_ID=$(aws ec2 create-security-group           --group-name "$SG_NAME"           --description "SG for ECS service"           --vpc-id "$VPC_ID"           --query 'GroupId' --output text)
                 fi
-                
-                echo "SERVICE_SG_ID=$SG_ID" >> $GITHUB_ENV   
+                echo "SERVICE_SG_ID=$SG_ID" >> $GITHUB_ENV    
               
       - name: 'Run :: Check Log Group Exists'
         run: |2-
@@ -555,7 +538,7 @@ jobs:
                     const ecsContainerName = process.env.ECS_CONTAINER_NAME;
                     const imageName = process.env.IMAGE_NAME;
                     const commitId = process.env.COMMIT_ID;    
-                    const portMappings = [{"containerPort": 3000,"name": "service-port","protocol": "tcp"}];
+                    const portMappings = JSON.parse(process.env.PORT_MAPPINGS);
                     const envSecrets = JSON.parse(process.env.ECS_ENV_VARS);
                     const awsRegion = process.env.cloudCredRegion;
 
@@ -629,45 +612,6 @@ jobs:
                 else
                   echo "Namespace '$NAMESPACE_NAME' already exists with ID: $NAMESPACE_ID"
                 fi
-
-      - name: 'Run :: Create Cloud Map service if missing'
-        run: |-
-          REGION=${{ env.cloudCredRegion }}
-          NAMESPACE_NAME=${{ env.ECS_NAMESPACE }}
-          SERVICE_DISCOVERY_NAME=${{ env.ECS_SERVICE }}
-
-          NAMESPACE_ID=$(aws servicediscovery list-namespaces \
-            --region "$REGION" \
-            --query "Namespaces[?Name=='$NAMESPACE_NAME'].Id" \
-            --output text)
-
-          SD_SERVICE_ID=$(aws servicediscovery list-services \
-            --region "$REGION" \
-            --filters Name=NAMESPACE_ID,Values=$NAMESPACE_ID,Condition=EQ \
-            --query "Services[?Name=='$SERVICE_DISCOVERY_NAME'].Id" \
-            --output text)
-
-          if [ -z "$SD_SERVICE_ID" ]; then
-            echo "Creating Cloud Map service '$SERVICE_DISCOVERY_NAME'..."
-            SD_SERVICE_ID=$(aws servicediscovery create-service \
-              --name "$SERVICE_DISCOVERY_NAME" \
-              --dns-config "NamespaceId=$NAMESPACE_ID,DnsRecords=[{Type=A,TTL=60}]" \
-              --health-check-custom-config FailureThreshold=1 \
-              --region "$REGION" \
-              --query "Service.Id" \
-              --output text)
-          else
-            echo "Cloud Map service already exists: $SD_SERVICE_ID"
-          fi
-
-          SD_SERVICE_ARN=$(aws servicediscovery get-service \
-            --id "$SD_SERVICE_ID" \
-            --region "$REGION" \
-            --query "Service.Arn" \
-            --output text)
-
-          echo "SD_SERVICE_ARN=$SD_SERVICE_ARN" >> $GITHUB_ENV
-
               
       - name: 'Run :: Register ECS task definition'
         id: register-task-def
@@ -680,26 +624,11 @@ jobs:
         run: |2-
 
                 SERVICE_EXISTS=$(aws ecs describe-services         --cluster ${{ env.ECS_CLUSTER }}         --services ${{ env.ECS_SERVICE }}         --query 'services[0].status' --output text)
-                SERVICE_CONNECT_CONFIG='{
-                  "enabled": true,
-                  "namespace": "'"${{ env.ECS_NAMESPACE }}"'",
-                  "services": [
-                    {
-                      "portName": "service-port",
-                      "clientAliases": [
-                        {
-                          "dnsName": "'"${{ env.ECS_SERVICE }}"'",
-                          "port": 3000
-                        }
-                      ]
-                    }
-                  ]
-                }'
-
+                SERVICE_CONNECT_CONFIG="enabled=true,namespace=${{ env.ECS_NAMESPACE }}"
                 if [ "$SERVICE_EXISTS" = "ACTIVE" ]; then
-                  aws ecs update-service           --cluster ${{ env.ECS_CLUSTER }}           --service ${{ env.ECS_SERVICE }}           --task-definition $TASK_DEF_ARN           --service-registries "registryArn=$SD_SERVICE_ARN,containerName=${{ env.ECS_CONTAINER_NAME }}"           --service-connect-configuration "$SERVICE_CONNECT_CONFIG"
+                  aws ecs update-service           --cluster ${{ env.ECS_CLUSTER }}           --service ${{ env.ECS_SERVICE }}           --task-definition $TASK_DEF_ARN           --service-connect-configuration "$SERVICE_CONNECT_CONFIG"
                 else
-                  aws ecs create-service           --cluster ${{ env.ECS_CLUSTER }}           --service-name ${{ env.ECS_SERVICE }}           --task-definition $TASK_DEF_ARN           --desired-count ${{ env.ECS_DESIRED_COUNT }}           --launch-type FARGATE           --network-configuration 'awsvpcConfiguration={subnets=[${{ env.ECS_SUBNET_IDS }}],securityGroups=[${{ env.SERVICE_SG_ID }}],assignPublicIp=${{ env.ECS_PUBLIC_IP }}}'           --service-registries "registryArn=$SD_SERVICE_ARN,containerName=${{ env.ECS_CONTAINER_NAME }}"           --service-connect-configuration "$SERVICE_CONNECT_CONFIG"           
+                  aws ecs create-service           --cluster ${{ env.ECS_CLUSTER }}           --service-name ${{ env.ECS_SERVICE }}           --task-definition $TASK_DEF_ARN           --desired-count ${{ env.ECS_DESIRED_COUNT }}           --launch-type FARGATE           --service-connect-configuration "$SERVICE_CONNECT_CONFIG"           --network-configuration 'awsvpcConfiguration={subnets=[${{ env.ECS_SUBNET_IDS }}],securityGroups=[${{ env.SERVICE_SG_ID }}],assignPublicIp=${{ env.ECS_PUBLIC_IP }}}'
                 fi   
               
     needs:
