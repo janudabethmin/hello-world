@@ -538,7 +538,7 @@ jobs:
                     const ecsContainerName = process.env.ECS_CONTAINER_NAME;
                     const imageName = process.env.IMAGE_NAME;
                     const commitId = process.env.COMMIT_ID;    
-                    const portMappings = JSON.parse(process.env.PORT_MAPPINGS);
+                    const portMappings = [{"containerPort": 3000,"name": "service-port","protocol": "tcp"}];
                     const envSecrets = JSON.parse(process.env.ECS_ENV_VARS);
                     const awsRegion = process.env.cloudCredRegion;
 
@@ -624,7 +624,22 @@ jobs:
         run: |2-
 
                 SERVICE_EXISTS=$(aws ecs describe-services         --cluster ${{ env.ECS_CLUSTER }}         --services ${{ env.ECS_SERVICE }}         --query 'services[0].status' --output text)
-                SERVICE_CONNECT_CONFIG="enabled=true,namespace=${{ env.ECS_NAMESPACE }}"
+                SERVICE_CONNECT_CONFIG='{
+                  "enabled": true,
+                  "namespace": "'"${{ env.ECS_NAMESPACE }}"'",
+                  "services": [
+                    {
+                      "portName": "service-port",
+                      "clientAliases": [
+                        {
+                          "dnsName": "'"${{ env.ECS_SERVICE }}"'",
+                          "port": 3000
+                        }
+                      ]
+                    }
+                  ]
+                }'
+               
                 if [ "$SERVICE_EXISTS" = "ACTIVE" ]; then
                   aws ecs update-service           --cluster ${{ env.ECS_CLUSTER }}           --service ${{ env.ECS_SERVICE }}           --task-definition $TASK_DEF_ARN           --service-connect-configuration "$SERVICE_CONNECT_CONFIG"
                 else
