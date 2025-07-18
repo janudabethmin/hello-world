@@ -660,7 +660,90 @@ jobs:
                   aws ecs update-service           --cluster ${{ env.ECS_CLUSTER }}           --service ${{ env.ECS_SERVICE }}           --task-definition $TASK_DEF_ARN           --service-registries "registryArn=$SD_SERVICE_ARN,containerName=${{ env.ECS_CONTAINER_NAME }}"           --service-connect-configuration "$SERVICE_CONNECT_CONFIG"
                     else
                   aws ecs create-service           --cluster ${{ env.ECS_CLUSTER }}           --service-name ${{ env.ECS_SERVICE }}           --task-definition $TASK_DEF_ARN           --desired-count ${{ env.ECS_DESIRED_COUNT }}           --launch-type FARGATE           --service-registries "registryArn=$SD_SERVICE_ARN,containerName=${{ env.ECS_CONTAINER_NAME }}"           --service-connect-configuration "$SERVICE_CONNECT_CONFIG"           --network-configuration 'awsvpcConfiguration={subnets=[${{ env.ECS_SUBNET_IDS }}],securityGroups=[${{ env.SERVICE_SG_ID }}],assignPublicIp=${{ env.ECS_PUBLIC_IP }}}'
-                fi   
+                fi 
+                
+      - name: 'Run :: Wait for deployed service to stabilize'
+        if: ${{ env.ECS_SERVICE != 'nginx' }}
+        run: |2-
+                REGION=${{ env.cloudCredRegion }}
+                SERVICE_NAME=${{ env.ECS_SERVICE }}
+
+                echo "Waiting for $SERVICE_NAME deployment to stabilize..."
+
+                while true; do
+                  STATUS=$(aws ecs describe-services \
+                    --cluster ${{ env.ECS_CLUSTER }} \
+                    --services "$SERVICE_NAME" \
+                    --region "$REGION" \
+                    --query "services[0].deployments[?status=='PRIMARY'].rolloutState" \
+                    --output text)
+
+                  echo "Current rollout state for $SERVICE_NAME: $STATUS"
+
+                  if [ "$STATUS" = "COMPLETED" ]; then
+                    echo "Deployment completed for $SERVICE_NAME"
+                    break
+                  elif [ "$STATUS" = "FAILED" ]; then
+                    echo "Deployment failed for $SERVICE_NAME"
+                    exit 1
+                  else
+                    sleep 10
+                  fi
+                done
+
+      - name: 'Run :: Restart NGINX service in nginx.local namespace'
+        if: ${{ env.ECS_SERVICE != 'nginx' }}
+        run: |2-
+                REGION=${{ env.cloudCredRegion }}
+                TARGET_NAMESPACE="nginx.local"
+
+                echo "Looking up Cloud Map namespace ID..."
+                NAMESPACE_ID=$(aws servicediscovery list-namespaces \
+                  --region "$REGION" \
+                  --query "Namespaces[?Name=='$TARGET_NAMESPACE'].Id" \
+                  --output text)
+
+                if [ -z "$NAMESPACE_ID" ]; then
+                  echo "Namespace '$TARGET_NAMESPACE' not found!"
+                  exit 1
+                fi
+
+                echo "Looking up NGINX Cloud Map service in namespace $TARGET_NAMESPACE..."
+                SERVICE_ID=$(aws servicediscovery list-services \
+                  --region "$REGION" \
+                  --filters Name=NAMESPACE_ID,Values=$NAMESPACE_ID,Condition=EQ \
+                  --query "Services[0].Id" \
+                  --output text)
+
+                if [ -z "$SERVICE_ID" ]; then
+                  echo "No service found in namespace '$TARGET_NAMESPACE'"
+                  exit 1
+                fi
+
+                SERVICE_ARN=$(aws servicediscovery get-service \
+                  --id "$SERVICE_ID" \
+                  --region "$REGION" \
+                  --query "Service.Arn" \
+                  --output text)
+
+                ECS_SERVICE_NAME=$(aws resourcegroupstaggingapi get-resources \
+                  --tag-filters Key=aws:cloudmap:service:arn,Values=$SERVICE_ARN \
+                  --resource-type-filters ecs:service \
+                  --query "ResourceTagMappingList[0].ResourceARN" \
+                  --output text | awk -F'/' '{print $NF}')
+
+                if [ -z "$ECS_SERVICE_NAME" ]; then
+                  echo "Could not find ECS service linked to Cloud Map service ARN: $SERVICE_ARN"
+                  exit 1
+                fi
+
+                echo "Restarting NGINX ECS service: $ECS_SERVICE_NAME"
+                aws ecs update-service \
+                  --cluster ${{ env.ECS_CLUSTER }} \
+                  --service "$ECS_SERVICE_NAME" \
+                  --force-new-deployment \
+                  --region "$REGION"
+
               
     needs:
       - _status_testing
