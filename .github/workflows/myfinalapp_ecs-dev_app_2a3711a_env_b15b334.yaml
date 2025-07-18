@@ -691,60 +691,68 @@ jobs:
                   fi
                 done
 
-      - name: 'Run :: Restart NGINX service in nginx.local namespace'
+      - name: 'Run :: Restart NGINX ECS service dynamically'
         if: ${{ env.ECS_SERVICE != 'nginx' }}
-        run: |2-
-                REGION=${{ env.cloudCredRegion }}
-                TARGET_NAMESPACE="nginx.local"
-
-                echo "Looking up Cloud Map namespace ID..."
-                NAMESPACE_ID=$(aws servicediscovery list-namespaces \
-                  --region "$REGION" \
-                  --query "Namespaces[?Name=='$TARGET_NAMESPACE'].Id" \
-                  --output text)
-
-                if [ -z "$NAMESPACE_ID" ]; then
-                  echo "Namespace '$TARGET_NAMESPACE' not found!"
-                  exit 1
-                fi
-
-                echo "Looking up NGINX Cloud Map service in namespace $TARGET_NAMESPACE..."
-                SERVICE_ID=$(aws servicediscovery list-services \
-                  --region "$REGION" \
-                  --filters Name=NAMESPACE_ID,Values=$NAMESPACE_ID,Condition=EQ \
-                  --query "Services[0].Id" \
-                  --output text)
-
-                if [ -z "$SERVICE_ID" ]; then
-                  echo "No service found in namespace '$TARGET_NAMESPACE'"
-                  exit 1
-                fi
-
-                SERVICE_ARN=$(aws servicediscovery get-service \
-                  --id "$SERVICE_ID" \
-                  --region "$REGION" \
-                  --query "Service.Arn" \
-                  --output text)
-
-                ECS_SERVICE_NAME=$(aws resourcegroupstaggingapi get-resources \
-                  --tag-filters Key=aws:cloudmap:service:arn,Values=$SERVICE_ARN \
-                  --resource-type-filters ecs:service \
-                  --query "ResourceTagMappingList[0].ResourceARN" \
-                  --output text | awk -F'/' '{print $NF}')
-
-                if [ -z "$ECS_SERVICE_NAME" ]; then
-                  echo "Could not find ECS service linked to Cloud Map service ARN: $SERVICE_ARN"
-                  exit 1
-                fi
-
-                echo "Restarting NGINX ECS service: $ECS_SERVICE_NAME"
-                aws ecs update-service \
-                  --cluster ${{ env.ECS_CLUSTER }} \
-                  --service "$ECS_SERVICE_NAME" \
-                  --force-new-deployment \
-                  --region "$REGION"
-
-              
+        env:
+          REGION: ${{ env.cloudCredRegion }}
+          CLUSTER: ${{ env.ECS_CLUSTER }}
+          NAMESPACE_NAME: nginx.local
+          CLOUDMAP_SERVICE_NAME: nginx
+        run: |-
+          echo "Looking up Cloud Map namespace ID..."
+          NAMESPACE_ID=$(aws servicediscovery list-namespaces \
+            --region "$REGION" \
+            --query "Namespaces[?Name=='$NAMESPACE_NAME'].Id" \
+            --output text)
+      
+          echo "Getting Cloud Map service ID..."
+          CM_SERVICE_ID=$(aws servicediscovery list-services \
+            --region "$REGION" \
+            --filters Name=NAMESPACE_ID,Values=$NAMESPACE_ID,Condition=EQ \
+            --query "Services[?Name=='$CLOUDMAP_SERVICE_NAME'].Id" \
+            --output text)
+      
+          if [ -z "$CM_SERVICE_ID" ]; then
+            echo "No Cloud Map service found with name $CLOUDMAP_SERVICE_NAME"
+            exit 1
+          fi
+      
+          CM_SERVICE_ARN=$(aws servicediscovery get-service \
+            --id "$CM_SERVICE_ID" \
+            --region "$REGION" \
+            --query "Service.Arn" \
+            --output text)
+      
+          echo "Finding ECS service using this Cloud Map service..."
+          ECS_SERVICE_NAME=$(aws ecs list-services \
+            --cluster "$CLUSTER" \
+            --region "$REGION" \
+            --query "serviceArns[]" \
+            --output text | xargs -n1 aws ecs describe-services \
+              --cluster "$CLUSTER" \
+              --region "$REGION" \
+              --services | jq -r \
+              --arg arn "$CM_SERVICE_ARN" \
+              '.services[] | select(.serviceRegistries[]?.registryArn == $arn) | .serviceName')
+      
+          if [ -z "$ECS_SERVICE_NAME" ]; then
+            echo "No ECS service found with Cloud Map ARN: $CM_SERVICE_ARN"
+            exit 1
+          fi
+      
+          echo "Restarting NGINX ECS service: $ECS_SERVICE_NAME"
+          aws ecs update-service \
+            --cluster "$CLUSTER" \
+            --region "$REGION" \
+            --service "$ECS_SERVICE_NAME" \
+            --force-new-deployment
+            
+          echo "Waiting for NGINX ECS service to stabilize..."
+          aws ecs wait services-stable \
+            --cluster "$CLUSTER" \
+            --region "$REGION" \
+            --services "$ECS_SERVICE_NAME"
+     
     needs:
       - _status_testing
     permissions: write-all
