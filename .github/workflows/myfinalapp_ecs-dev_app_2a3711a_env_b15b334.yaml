@@ -652,7 +652,7 @@ jobs:
         run: |2-
 
                 SERVICE_EXISTS=$(aws ecs describe-services         --cluster ${{ env.ECS_CLUSTER }}         --services ${{ env.ECS_SERVICE }}         --query 'services[0].status' --output text)
-                DECODED_SERVICE_PORTS_MAP=$(echo "${{ env.SERVICE_PORTS_MAP }}" | jq -r)
+                DECODED_SERVICE_PORTS_MAP=${{ env.SERVICE_PORTS_MAP }}
                 SERVICE_CONNECT_CONFIG='{"enabled":true,"namespace":"'"${{ env.ECS_NAMESPACE }}"'","services":'"$DECODED_SERVICE_PORTS_MAP"'}'
                 if [ "$SERVICE_EXISTS" = "ACTIVE" ]; then
                   aws ecs update-service           --cluster ${{ env.ECS_CLUSTER }}           --service ${{ env.ECS_SERVICE }}           --task-definition $TASK_DEF_ARN           --service-registries "registryArn=$SD_SERVICE_ARN,containerName=${{ env.ECS_CONTAINER_NAME }}"           --service-connect-configuration "$SERVICE_CONNECT_CONFIG"
