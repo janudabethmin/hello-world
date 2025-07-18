@@ -777,6 +777,12 @@ jobs:
             fi
           done
 
+          echo "Waiting for NGINX ECS service to stabilize..."
+          aws ecs wait services-stable \
+            --cluster "$CLUSTER" \
+            --region "$REGION" \
+            --services "$ECS_SERVICE_NAME"
+
      
     needs:
       - _status_testing
