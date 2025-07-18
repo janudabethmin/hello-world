@@ -746,37 +746,7 @@ jobs:
             --region "$REGION" \
             --service "$ECS_SERVICE_NAME" \
             --force-new-deployment
-
-      - name: 'Wait for NGINX ECS service to stabilize'
-        if: ${{ env.ECS_SERVICE == 'nginx' }}
-        run: |2-
-          REGION=${{ env.cloudCredRegion }}
-          CLUSTER=${{ env.ECS_CLUSTER }}
-          SERVICE_NAME=nginx
-      
-          echo "Waiting for NGINX ECS service to stabilize..."
-      
-          while true; do
-            STATUS=$(aws ecs describe-services \
-              --cluster "$CLUSTER" \
-              --services "$SERVICE_NAME" \
-              --region "$REGION" \
-              --query "services[0].deployments[?status=='PRIMARY'].rolloutState" \
-              --output text)
-      
-            echo "Current rollout state for NGINX: $STATUS"
-      
-            if [ "$STATUS" = "COMPLETED" ]; then
-              echo "NGINX deployment completed."
-              break
-            elif [ "$STATUS" = "FAILED" ]; then
-              echo "NGINX deployment failed."
-              exit 1
-            else
-              sleep 10
-            fi
-          done
-
+            
           echo "Waiting for NGINX ECS service to stabilize..."
           aws ecs wait services-stable \
             --cluster "$CLUSTER" \
