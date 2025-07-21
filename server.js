@@ -3,16 +3,16 @@ const app = express()
 const port = 3000
 
 app.get('/', (req, res) => {
-  res.send('Thank You, Thameera!')
+  res.send('Thank You, Thameera! Januda')
 })
 
 app.get('/hello', (req, res) => {
-  res.send('Hi, Thameera!')
+  res.send('Hi, Thameera! JAnuda')
 })
 
 app.listen(port, '0.0.0.0', () => {
   console.log(`Example app listening on port ${port}`)
-  console.log(`################################ ${process.env.REGION}`)
-  console.log(`################################ ${process.env.NAME}`)
-  console.log(`################################ ${process.env.LOG}`)
+  console.log(`HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH ${process.env.REGION}`)
+  console.log(`HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH ${process.env.NAME}`)
+  console.log(`HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH ${process.env.LOG}`)
 })
