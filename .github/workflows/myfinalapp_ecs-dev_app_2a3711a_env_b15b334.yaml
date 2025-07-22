@@ -1,13 +1,5 @@
 name: myfinalapp_ecs-dev_app_2a3711a_env_b15b334 Pipeline (Skyu Generated)
 'on':
-  push:
-    branches:
-      - main
-    paths-ignore:
-      - .github/workflows/**
-      - .trivyignore
-      - Readme.md
-      - README.md
   workflow_dispatch: {}
   repository_dispatch:
     types: pipeline_d42fe3b4-d4c7-4602-ae6f-94616f9fe006
