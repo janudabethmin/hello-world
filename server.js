@@ -9,12 +9,12 @@ app.use((req, res, next) => {
 })
 
 app.get('/', (req, res) => {
-  res.send('Thank You, Thameera! Nilesh')
+  res.send('Thank You!')
 })
 
 
 app.get('/hello', (req, res) => {
-  res.send('Hi, Thameera! JAnuda Nilesh boy')
+  res.send('Hi, Hello world!')
 })
 
 app.listen(port, '0.0.0.0', () => {
