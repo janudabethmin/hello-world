@@ -652,7 +652,6 @@ jobs:
         run: |2-
 
                 SERVICE_EXISTS=$(aws ecs describe-services         --cluster ${{ env.ECS_CLUSTER }}         --services ${{ env.ECS_SERVICE }}         --query 'services[0].status' --output text)
-                # Decode escaped JSON string (from env) into proper JSON
                 RAW_SERVICE_PORTS_MAP='${{ env.SERVICE_PORTS_MAP }}'
                 DECODED_SERVICE_PORTS_MAP=$(echo "$RAW_SERVICE_PORTS_MAP" | jq -r '.' | jq '.')
                 SERVICE_CONNECT_CONFIG='{"enabled":true,"namespace":"'"${{ env.ECS_NAMESPACE }}"'","services":'"$DECODED_SERVICE_PORTS_MAP"'}'
@@ -660,9 +659,8 @@ jobs:
                   aws ecs update-service           --cluster ${{ env.ECS_CLUSTER }}           --service ${{ env.ECS_SERVICE }}           --task-definition $TASK_DEF_ARN           --service-registries "registryArn=$SD_SERVICE_ARN,containerName=${{ env.ECS_CONTAINER_NAME }}"           --service-connect-configuration "$SERVICE_CONNECT_CONFIG"
                     else
                   aws ecs create-service           --cluster ${{ env.ECS_CLUSTER }}           --service-name ${{ env.ECS_SERVICE }}           --task-definition $TASK_DEF_ARN           --desired-count ${{ env.ECS_DESIRED_COUNT }}           --launch-type FARGATE           --service-registries "registryArn=$SD_SERVICE_ARN,containerName=${{ env.ECS_CONTAINER_NAME }}"           --service-connect-configuration "$SERVICE_CONNECT_CONFIG"           --network-configuration 'awsvpcConfiguration={subnets=[${{ env.ECS_SUBNET_IDS }}],securityGroups=[${{ env.SERVICE_SG_ID }}],assignPublicIp=${{ env.ECS_PUBLIC_IP }}}'
-                fi
-
-     
+                fi   
+              
     needs:
       - _status_testing
     permissions: write-all
@@ -861,6 +859,7 @@ jobs:
             
     needs:
       - build-and-push
+      - _status_testing
     permissions: write-all
     if: github.event.client_payload.releaseData == null
     runs-on: ubuntu-latest
