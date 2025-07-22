@@ -1,9 +1,5 @@
 name: myfinalapp_pr-default_app_2a3711a Pipeline (Skyu Generated)
 'on':
-  pull_request:
-    types:
-      - opened
-      - synchronize
   workflow_dispatch: {}
   repository_dispatch:
     types: pipeline_3c3966d8-ce9e-473e-ae26-fe8cf4e4059a
