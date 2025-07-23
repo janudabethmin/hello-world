@@ -9,21 +9,21 @@ app.use((req, res, next) => {
 })
 
 app.get('/', (req, res) => {
-  res.send('Thameera aneeeeeeeeeeeeeeeeeeeee /')
+  res.send('Aneeeeeeeeeeeeeeeeeeeee Pasan')
 })
 
 
 app.get('/hello', (req, res) => {
-  res.send('Thameera aneeeeeeeeeeeeeeeeeeeee /hello')
+  res.send('Aneeeeeeeeeeeeeeeeeeeee Pasan')
 })
 
 app.get('/api/v1', (req, res) => {
-  res.send('Thameera aneeeeeeeeeeeeeeeeeeeee /api/v1')
+  res.send('Aneeeeeeeeeeeeeeeeeeeee Pasan')
 })
 
 app.listen(port, '0.0.0.0', () => {
   console.log(`Example app listening on port ${port}`)
-  console.log(`HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH ${process.env.REGION}`)
-  console.log(`HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH ${process.env.NAME}`)
-  console.log(`HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH ${process.env.LOG}`)
+  console.log(`${process.env.REGION}`)
+  console.log(`${process.env.NAME}`)
+  console.log(`${process.env.LOG}`)
 })
